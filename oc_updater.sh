@@ -12,14 +12,11 @@
 
 clean_up () {
 
-echo "cleaning up..."
-
-cd ${LAUNCHDIR}
-rm -rf ${WORKDIR}
+echo -n "cleaning up..." && cd ${LAUNCHDIR} && rm -rf ${WORKDIR} && echo "..done."
+echo "Bye!"
 
 }
 
-# Print help
 print_help () {
    # Display Help
    echo "Openshift Client download/update tool"
@@ -68,8 +65,8 @@ if [ "$CURL_CHECK" == "OK" ];
 		echo "Please install curl or wget in order to use this script"
 fi
 	
-		echo "Downloading latest oc client..."; 
-		$URL_TOOL "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz" && echo "Done." 
+		echo -n "Downloading latest oc client..."; 
+		$URL_TOOL "https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz" && echo "..done." 
 	       if [ "$?" != "0" ];then echo "Cannot download anything, please verify your network configuration.";
 	       fi
 
