@@ -19,6 +19,7 @@ rm -rf ${WORKDIR}
 
 }
 
+# Print help
 print_help () {
    # Display Help
    echo "Openshift Client download/update tool"
