@@ -1,3 +1,6 @@
+echo "Work in progress"
+exit 2
+
 #!/usr/bin/env bash 
 #
 #
@@ -6,6 +9,10 @@
 # By Marco Placidi mplacidi@redhat.com
 #
 # 2022/05/05
+
+# Variables
+
+client_param=false
 
 # Functions definitions
 # Cleanup step
@@ -28,15 +35,25 @@ print_help () {
    echo
 }
 
+choose_client () {
+   # Lets you choose which client to install/update
+   }
+
 # Parameters section
 for param in "$@"
 	do
 		if [ "$param" == "--help" ] || [ "$param" == "-h" ];
 			then print_help; exit 2
 		fi
+		if [ "$param" == "--client" ]
+			then client_param=true
+		fi
 done
 
 
+if [ "$client_param" == "true" ];
+	then echo OK
+fi
 
 # Defines a working directory under /tmp and defines current path
 export WORKDIR=/tmp/oc_cli_update_$(date +%Y.%m.%d-%H.%M.%S)
