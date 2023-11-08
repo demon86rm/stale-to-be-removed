@@ -126,7 +126,11 @@ if [ "$CURL_CHECK" == "OK" ];
 fi
 	
 		echo -n "Downloading latest $client client..."; 
-		$URL_TOOL $CLIENT_URL -O --output-dir ${TMPDIR} && echo "..done." 
+		if [ "$client" == "ocm" ];
+			then $URL_TOOL $CLIENT_URL -LO --output-dir ${TMPDIR} && echo "..done."
+		else
+			$URL_TOOL $CLIENT_URL -O --output-dir ${TMPDIR} && echo "..done." 
+		fi
 	       if [ "$?" != "0" ];then echo "Cannot download anything, please verify your network configuration.";
 	       fi
 
@@ -135,7 +139,12 @@ echo "Checking if $client already installed"
 CLIENT_EXISTS=$(which $client 2>&1 >/dev/null && echo OK || echo NO)
 
 if [ "$CLIENT_EXISTS" == "OK" ];
-	then echo "$client already client exists, now checking downloaded version vs. installed version md5 checksums"; export CLIENT_MD5=$(tar xvfz ${TMPDIR}/${CLIENT_FILENAME} --to-command=md5sum|grep -A1 $client|tail -n1|sed -E 's/\s.+$//g')
+	then echo "$client already client exists, now checking downloaded version vs. installed version md5 checksums"; 
+		if [ "$client" == "ocm" ];
+			then export CLIENT_MD5=$(md5sum ${TMPDIR}/${CLIENT_FILENAME} |grep -A1 $client|tail -n1|sed -E 's/\s.+$//g')
+		else
+			export CLIENT_MD5=$(tar xvfz ${TMPDIR}/${CLIENT_FILENAME} --to-command=md5sum|grep -A1 $client|tail -n1|sed -E 's/\s.+$//g') 
+		fi
 	     export LOCAL_CLIENT_MD5=$(md5sum $CLIENT_CHECK|sed -E 's/\s.+$//g')
 	     if [ "${CLIENT_MD5}" == "${LOCAL_CLIENT_MD5}" ];
 	     then echo "Already downloaded $client client with md5sum ${LOCAL_CLIENT_MD5}"; clean_up; exit 2
