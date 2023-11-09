@@ -21,7 +21,7 @@ print_help () {
    echo "Openshift Client download/update tool"
    echo
    echo "option capability has been implemented for future improvements"
-   echo "Syntax: oc_updater.sh [|-h/--help] -c $client"
+   echo "Syntax: cloud_updater.sh [|-h/--help] -c $client"
    echo "options:"
    echo "-h/--help      Print this Help."
    echo "-d/--debug	Enables set -x, for debug"
@@ -67,7 +67,7 @@ if [ -z "$client" ];
 fi
 if [ "$client" == "oc" ]; 
 	  then CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz"
-		client=${client:-oc}
+		#client=${client:-oc}
 	elif [ "$client" == "ocm" ];
 	then export OCM_VERSION=$(curl https://github.com/openshift-online/ocm-cli/releases/latest -sL|grep openshift-online|grep -Eo v'[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,3}'|uniq)
 		export CLIENT_URL="https://github.com/openshift-online/ocm-cli/releases/download/${OCM_VERSION}/ocm-linux-amd64"
