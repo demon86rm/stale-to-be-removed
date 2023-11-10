@@ -65,7 +65,7 @@ print_sudo_disclaimer
 # ALL IN!
 
 if [ "$client" == "all" ];
-	then declare -a CLIENT_ARRAY=(oc ocm tkn kn helm az rosa aws)
+	then declare -a CLIENT_ARRAY=(oc ocm tkn kn helm rosa aws az)
 else CLIENT_ARRAY=$client # makes it works in Singular client update
 fi
 
@@ -91,16 +91,16 @@ for client in "${CLIENT_ARRAY[@]}"
      	elif [ "$client" == "helm" ];
      	  then export CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64.tar.gz"
      	elif [ "$client" == "az" ];
-     	  #then curl -L https://aka.ms/InstallAzureCli | bash
-     	  #then curl -# https://azurecliprod.blob.core.windows.net/install.py | python3 - 
-     	  exit 0
+	  then 
+	  PYTHONCMD=$(which python3)||$(which pyhton)
+	    if [ -z $PYTHONCMD ];then exit 2;fi
+	  $PYTHONCMD <(curl -s https://azurecliprod.blob.core.windows.net/install.py) 
      	elif [ "$client" == "aws" ];
      	  then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip -o awscliv2.zip
      	       if [ -z $(which aws) ];then
      	       sudo aws/install
      	       else sudo aws/install --update
                     fi
-     	  exit 0
      	else echo "Please, select a valid client between oc, rosa, ocm, tkn, kn, helm, az, aws, all";exit 2
      fi
      
