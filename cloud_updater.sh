@@ -6,6 +6,20 @@
 #
 # 2022/05/05
 
+# Global Vars section
+
+# Client Array section
+
+declare -A CLIENT_URLS_ARRAY
+CLIENT_URLS_ARRAY[oc]="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz"
+CLIENT_URLS_ARRAY[ocm]="https://github.com/openshift-online/ocm-cli/releases/download/${OCM_VERSION}/ocm-linux-amd64"
+CLIENT_URLS_ARRAY[tkn]="https://mirror.openshift.com/pub/openshift-v4/clients/pipelines/latest/tkn-linux-amd64.tar.gz"
+CLIENT_URLS_ARRAY[kn]="https://mirror.openshift.com/pub/openshift-v4/clients/serverless/latest/kn-linux-amd64.tar.gz"
+CLIENT_URLS_ARRAY[rosa]="https://mirror.openshift.com/pub/openshift-v4/clients/rosa/latest/rosa-linux.tar.gz"
+CLIENT_URLS_ARRAY[helm]="https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64.tar.gz"
+CLIENT_URLS_ARRAY[az]="https://azurecliprod.blob.core.windows.net/install.py"
+CLIENT_URLS_ARRAY[aws]="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+
 # Functions definitions
 # Cleanup step
 
@@ -41,73 +55,12 @@ print_sudo_disclaimer () {
 	done
 }
 
-# Parameters section
-for param in "$@"
-	do
-		if [ "$param" == "--help" ] || [ "$param" == "-h" ];
-			then print_help; exit 2
-		elif [ "$param" == "--debug" ] || [ "$param" == "-d" ];
-			then set -x;
-		fi
-done
-
-# Client choice
-while getopts c: option
-do
-	case "${option}"
-		in
-		c)client=${OPTARG};;
-	esac
-done
-
-print_sudo_disclaimer
-
-# ALL IN!
-
-if [ "$client" == "all" ];
-	then declare -a CLIENT_ARRAY=(oc ocm tkn kn helm rosa aws az)
-else CLIENT_ARRAY=$client # makes it works in Singular client update
-fi
-
-for client in "${CLIENT_ARRAY[@]}"
-  do
-     # Singular client update
-     if [ -z "$client" ];
-     	then read -p "Please input one of the following [rosa|ocm|tkn|kn|helm|oc|az]: " client	
-     fi
+client_check_n_update () {
      
-     if [ "$client" == "oc" ]; 
-     	  then CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/stable/openshift-client-linux.tar.gz"
-     		#client=${client:-oc}
-     	elif [ "$client" == "ocm" ];
-     	then export OCM_VERSION=$(curl https://github.com/openshift-online/ocm-cli/releases/latest -sL|grep openshift-online|grep -Eo v'[0-9]{1,2}.[0-9]{1,2}.[0-9]{1,3}'|uniq)
-     		export CLIENT_URL="https://github.com/openshift-online/ocm-cli/releases/download/${OCM_VERSION}/ocm-linux-amd64"
-     	elif [ "$client" == "tkn" ];
-     	  then export CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/clients/pipelines/latest/tkn-linux-amd64.tar.gz"
-     	elif [ "$client" == "kn" ];
-     	  then export CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/clients/serverless/latest/kn-linux-amd64.tar.gz"
-     	elif [ "$client" == "rosa" ];
-     	  then export CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/clients/rosa/latest/rosa-linux.tar.gz"
-     	elif [ "$client" == "helm" ];
-     	  then export CLIENT_URL="https://mirror.openshift.com/pub/openshift-v4/clients/helm/latest/helm-linux-amd64.tar.gz"
-     	elif [ "$client" == "az" ];
-	  then 
-	  PYTHONCMD=$(which python3)||$(which pyhton)
-	    if [ -z $PYTHONCMD ];then exit 2;fi
-	  $PYTHONCMD <(curl -s https://azurecliprod.blob.core.windows.net/install.py) 
-     	elif [ "$client" == "aws" ];
-     	  then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip -o awscliv2.zip
-     	       if [ -z $(which aws) ];then
-     	       sudo aws/install
-     	       else sudo aws/install --update
-                    fi
-     	else echo "Please, select a valid client between oc, rosa, ocm, tkn, kn, helm, az, aws, all";exit 2
-     fi
-     
+     export CLIENT_URL=${CLIENT_URLS_ARRAY[$client]}
      export CLIENT_FILENAME=$(basename $CLIENT_URL)
      # Client env vars definition based on $client parameter chosen by the user
      echo $CLIENT_URL $CLIENT_FILENAME
-     
      
      # Defines a working directory under /tmp and defines current path
      export TMPDIR=/tmp/${client}_cli_update_$(date +%Y.%m.%d-%H.%M.%S)
@@ -147,9 +100,11 @@ for client in "${CLIENT_ARRAY[@]}"
      CLIENT_EXISTS=$(which $client 2>&1 >/dev/null && echo OK || echo NO)
      
      if [ "$CLIENT_EXISTS" == "OK" ];
-     	then echo "$client already client exists, now checking downloaded version vs. installed version md5 checksums"; 
+     	then echo "$client already installed in your system" "now checking downloaded version vs. installed version md5 checksums"; 
      		if [ "$client" == "ocm" ];
      			then export CLIENT_MD5=$(md5sum ${TMPDIR}/${CLIENT_FILENAME} |grep -A1 $client|tail -n1|sed -E 's/\s.+$//g')
+		elif [ "$client" == "az" ];
+			then echo "Check cannot be implemented for azure-cli, if you continue with the script you'll overwrite your current installation"
      		else
      			export CLIENT_MD5=$(tar xvfz ${TMPDIR}/${CLIENT_FILENAME} --to-command=md5sum|grep -A1 $client|tail -n1|sed -E 's/\s.+$//g') 
      		fi
@@ -163,9 +118,67 @@ for client in "${CLIENT_ARRAY[@]}"
      echo "Now unTar-ing $client client into $CLIENT_LOC"
      if [[ "$CLIENT_FILENAME" == *".tar.gz" ]];
      	then tar xvzf ${TMPDIR}/${CLIENT_FILENAME} -C $CLIENT_LOC --overwrite && echo "$client client installed/updated in $CLIENT_LOC" || echo "Please verify if your user has sufficient permissions for writing in $CLIENT_LOC, otherwise run this script with sudo"
+     elif [ "$client" == "az" ];
+	     then PYTHONCMD=$(which python3)||$(which pyhton)
+           if [ -z $PYTHONCMD ];then echo "Python is required to proceed with azure-cli installation, exiting program..";exit 2;fi
+         $PYTHONCMD <(curl -s https://azurecliprod.blob.core.windows.net/install.py)
+     elif [ "$client" == "aws" ];
+	     then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip -o awscliv2.zip
+	             if [ -z $(which aws) ];
+		     	then sudo aws/install
+	             else sudo aws/install --update
+        	    fi
      else
      	cp ${TMPDIR}/$CLIENT_FILENAME $CLIENT_LOC/$client
      fi
+}
+
+# Parameters section
+for param in "$@"
+	do
+		if [ "$param" == "--help" ] || [ "$param" == "-h" ];
+			then print_help; exit 2
+		elif [ "$param" == "--debug" ] || [ "$param" == "-d" ];
+			then set -x;
+		fi
+done
+
+# Client choice
+while getopts c: option
+do
+	case "${option}"
+		in
+		c)client=${OPTARG};;
+	esac
+done
+
+print_sudo_disclaimer
+
+
+
+# ALL IN!
+
+if [ "$client" == "all" ];
+	then declare -a CLIENT_ARRAY=(oc ocm tkn kn helm rosa aws az)
+else CLIENT_ARRAY=$client # makes it works in Singular client update
+fi
+
+# User input client validation
+
+declare -a CLIENT_VALUES=(oc ocm tkn kn helm rosa aws az)
+declare -A KEY
+for key in "${!CLIENT_VALUES[@]}"; do KEY[${CLIENT_VALUES[$key]}]="$key";done
+[[ ! -n "${KEY[$client]}" ]] && printf '%s is not a valide client value\n' "$client" && exit 2
+
+
+for client in "${CLIENT_ARRAY[@]}"
+  do
+     # Singular client update
+     if [ -z "$client" ]
+     	then read -p "Please input one of the following [rosa|ocm|tkn|kn|helm|oc|az]: " client	
+     fi
+
+     client_check_n_update
      # Clean up function call
      clean_up
 done
