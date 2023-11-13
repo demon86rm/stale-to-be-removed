@@ -6,6 +6,15 @@
 #
 # 2022/05/05
 
+# OS Type definition
+
+UNIXOK=[[ -z $(uname -o) ]] && echo WINDOWS || echo NO
+if [[ -z $(uname -o) ]];
+	then
+exit 0
+
+fi
+
 # Global Vars section
 
 # Client Array section
@@ -182,3 +191,6 @@ for client in "${CLIENT_ARRAY[@]}"
      # Clean up function call
      clean_up
 done
+
+
+
