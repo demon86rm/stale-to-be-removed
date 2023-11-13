@@ -7,7 +7,7 @@
 # 2022/05/05
 
 # Global Vars section
-
+OCM_VERSION=$(curl https://github.com/openshift-online/ocm-cli/releases/latest -L|egrep -o Release\ [0-9].[0-9].[0-9]{2}|sed 's/<[^>]*>//g;s/Release\ /v/g'|uniq)
 # Client Array section
 
 declare -A CLIENT_URLS_ARRAY
