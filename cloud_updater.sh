@@ -8,14 +8,20 @@
 
 # OS Type definition
 
-UNIXOK=[[ -z $(uname -o) ]] && echo WINDOWS || echo NO
-if [[ -z $(uname -o) ]];
-	then
-exit 0
+:; if [ -z 0 ]; then
+  @echo off
+  goto :WINDOWS
+fi
 
+MACORLINUX=$(uname -a|grep Darwin;echo $?)
+if [ "${MACORLINUX}" == 0 ];
+	then ostype=macos
+else
+	ostype=linux
 fi
 
 # Global Vars section
+[[ $client == "ocm" || $client == "all" ]] && OCM_VERSION=$(curl https://github.com/openshift-online/ocm-cli/releases/latest -L|grep -Eo Release\ [0-9].[0-9].[0-9]{2}|sed 's/<[^>]*>//g;s/Release\ /v/g'|uniq)
 
 # Client Array section
 
@@ -64,7 +70,7 @@ print_sudo_disclaimer () {
 	done
 }
 
-client_check_n_update () {
+linux_client_check_n_update () {
      
      export CLIENT_URL=${CLIENT_URLS_ARRAY[$client]}
      export CLIENT_FILENAME=$(basename $CLIENT_URL)
@@ -97,9 +103,9 @@ client_check_n_update () {
      	
      		echo -n "Downloading latest $client client..."; 
      		if [ "$client" == "ocm" ];
-     			then $URL_TOOL $CLIENT_URL -LO --output-dir ${TMPDIR} && echo "..done."
+     			then $URL_TOOL $CLIENT_URL -L --output-dir ${TMPDIR} && echo "..done."
      		else
-     			$URL_TOOL $CLIENT_URL -O --output-dir ${TMPDIR} && echo "..done." 
+     			$URL_TOOL $CLIENT_URL --output-dir ${TMPDIR} && echo "..done." 
      		fi
      	       if [ "$?" != "0" ];then echo "Cannot download anything, please verify your network configuration.";
      	       fi
@@ -119,28 +125,31 @@ client_check_n_update () {
      		fi
      	     export LOCAL_CLIENT_MD5=$(md5sum $CLIENT_CHECK|sed -E 's/\s.+$//g')
      	     if [ "${CLIENT_MD5}" == "${LOCAL_CLIENT_MD5}" ];
-     	     then echo "Already downloaded $client client with md5sum ${LOCAL_CLIENT_MD5}"; clean_up
-     fi
-     
-     fi
-     # Untar and copy/overwrite to CLIENT_LOC
-     echo "Now unTar-ing $client client into $CLIENT_LOC"
-     if [[ "$CLIENT_FILENAME" == *".tar.gz" ]];
-     	then tar xvzf ${TMPDIR}/${CLIENT_FILENAME} -C $CLIENT_LOC --overwrite && echo "$client client installed/updated in $CLIENT_LOC" || echo "Please verify if your user has sufficient permissions for writing in $CLIENT_LOC, otherwise run this script with sudo"
-     elif [ "$client" == "az" ];
-	     then PYTHONCMD=$(which python3)||$(which pyhton)
-           if [ -z $PYTHONCMD ];then echo "Python is required to proceed with azure-cli installation, exiting program..";exit 2;fi
-         $PYTHONCMD <(curl -s https://azurecliprod.blob.core.windows.net/install.py)
-     elif [ "$client" == "aws" ];
-	     then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip -o awscliv2.zip
-	             if [ -z $(which aws) ];
-		     	then sudo aws/install
-	             else sudo aws/install --update
-        	    fi
-     else
-     	cp ${TMPDIR}/$CLIENT_FILENAME $CLIENT_LOC/$client
-     fi
+     	     then echo "Already downloaded $client client with md5sum ${LOCAL_CLIENT_MD5}";
+	     else
+		     # Untar and copy/overwrite to CLIENT_LOC
+			echo "Now unTar-ing $client client into $CLIENT_LOC" 
+			if [[ "$CLIENT_FILENAME" == *".tar.gz" ]];
+				then tar xvzf ${TMPDIR}/${CLIENT_FILENAME} -C $CLIENT_LOC --overwrite && echo "$client client installed/updated in $CLIENT_LOC" || echo "Please verify if your user has sufficient permissions for writing in $CLIENT_LOC, otherwise run this script with sudo"
+			elif [ "$client" == "az" ];
+				then PYTHONCMD=$(which python3)||$(which pyhton)
+					if [ -z $PYTHONCMD ];then echo "Python is required to proceed with azure-cli installation, exiting program..";exit 2;fi
+					$PYTHONCMD <(curl -s https://azurecliprod.blob.core.windows.net/install.py)
+			elif [ "$client" == "aws" ];
+				then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip -o awscliv2.zip
+					[ -z $(which aws) ] && sudo aws/install || sudo aws/install --update
+			else
+				cp ${TMPDIR}/$CLIENT_FILENAME $CLIENT_LOC/$client
+	     fi
+	fi
+fi
+
 }
+     
+macos_client_check_n_update () {
+echo NOT YET
+}
+
 
 # Parameters section
 for param in "$@"
@@ -187,10 +196,11 @@ for client in "${CLIENT_ARRAY[@]}"
      	then read -p "Please input one of the following [rosa|ocm|tkn|kn|helm|oc|az]: " client	
      fi
 
-     client_check_n_update
+     ${ostype}_client_check_n_update
      # Clean up function call
      clean_up
 done
+exit
 
-
+:WINDOWS
 
