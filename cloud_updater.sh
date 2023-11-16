@@ -136,8 +136,8 @@ linux_client_check_n_update () {
 					if [ -z $PYTHONCMD ];then echo "Python is required to proceed with azure-cli installation, exiting program..";exit 2;fi
 					$PYTHONCMD <(curl -s https://azurecliprod.blob.core.windows.net/install.py)
 			elif [ "$client" == "aws" ];
-				then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip -o awscliv2.zip
-					[ -z $(which aws) ] && sudo aws/install || sudo aws/install --update
+			then curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${TMPDIR}/awscliv2.zip" && unzip -o ${TMPDIR}/awscliv2.zip -d ${TMPDIR}
+				[ -z $(which aws) ] && sudo ${TMPDIR}/aws/install || sudo ${TMPDIR}/aws/install --update
 			else
 				cp ${TMPDIR}/$CLIENT_FILENAME $CLIENT_LOC/$client
 	     fi
@@ -179,15 +179,11 @@ print_sudo_disclaimer
 if [ "$client" == "all" ];
 	then declare -a CLIENT_ARRAY=(oc ocm tkn kn helm rosa aws az)
 else CLIENT_ARRAY=$client # makes it works in Singular client update
+	declare -a CLIENT_VALUES=(oc ocm tkn kn helm rosa aws az)
+	declare -A KEY
+	for key in "${!CLIENT_VALUES[@]}"; do KEY[${CLIENT_VALUES[$key]}]="$key";done
+	[[ ! -n "${KEY[$client]}" ]] && printf '%s is not a valid client value\n' "$client" && exit 2
 fi
-
-# User input client validation
-
-declare -a CLIENT_VALUES=(oc ocm tkn kn helm rosa aws az)
-declare -A KEY
-for key in "${!CLIENT_VALUES[@]}"; do KEY[${CLIENT_VALUES[$key]}]="$key";done
-[[ ! -n "${KEY[$client]}" ]] && printf '%s is not a valide client value\n' "$client" && exit 2
-
 
 for client in "${CLIENT_ARRAY[@]}"
   do
