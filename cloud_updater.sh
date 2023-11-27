@@ -21,7 +21,13 @@ else
 fi
 
 # Global Vars section
+
+## ocm requires a latest release idenfity, otherwise curl won't download a frickin' anything
+
 [[ $client == "ocm" || $client == "all" ]] && OCM_VERSION=$(curl https://github.com/openshift-online/ocm-cli/releases/latest -L|grep -Eo Release\ [0-9].[0-9].[0-9]{2}|sed 's/<[^>]*>//g;s/Release\ /v/g'|uniq)
+
+## check if there's any Package Manager 
+
 
 # Client Array section
 
@@ -119,6 +125,9 @@ linux_client_check_n_update () {
      		if [ "$client" == "ocm" ];
      			then export CLIENT_MD5=$(md5sum ${TMPDIR}/${CLIENT_FILENAME} |grep -A1 $client|tail -n1|sed -E 's/\s.+$//g')
 		elif [ "$client" == "az" ];
+			PKGCHECK=$(rpm -q azure-cli > /dev/null;echo $?)
+			[[ -x $PKGMGR && $PKGMGR == *"rpm"* ]] && $PKGMGR -q azure-cli 2>/dev/null >/dev/null ;echo $? || $PKGMGR -l azure-cli 2>/dev/null^C
+
 			then echo "Check cannot be implemented for azure-cli, if you continue with the script you'll overwrite your current installation"
      		else
      			export CLIENT_MD5=$(tar xvfz ${TMPDIR}/${CLIENT_FILENAME} --to-command=md5sum|grep -A1 $client|tail -n1|sed -E 's/\s.+$//g') 
