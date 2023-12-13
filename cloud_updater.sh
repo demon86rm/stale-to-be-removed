@@ -28,7 +28,6 @@ fi
 
 # Global Vars section
 
-
 ## check if there's any Package Manager 
 
 declare -A osInfo;
@@ -46,6 +45,7 @@ done
 ## ocm requires a latest release idenfity, otherwise curl won't download a frickin' anything
 
 OCM_VERSION=$(curl https://github.com/openshift-online/ocm-cli/releases/latest -L|grep -Eo Release\ [0-9].[0-9].[0-9]{2}|sed 's/<[^>]*>//g;s/Release\ /v/g'|uniq)
+
 
 # Client Array section
 
